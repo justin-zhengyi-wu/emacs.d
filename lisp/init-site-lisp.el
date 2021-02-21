@@ -1,19 +1,25 @@
+;;; init-site-lisp.el --- Support elisp manually installed in the site-lisp dir -*- lexical-binding: t -*-
+;;; Commentary:
+;;; Code:
+
 ;;; Set load path
 
-(eval-when-compile (require 'cl))
-(defun sanityinc/add-subdirs-to-load-path (parent-dir)
-  "Adds every non-hidden subdir of PARENT-DIR to `load-path'."
-  (let* ((default-directory parent-dir))
-    (progn
-      (setq load-path
-            (append
-             (remove-if-not
-              (lambda (dir) (file-directory-p dir))
-              (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
-             load-path)))))
+(require 'cl-lib)
 
-(sanityinc/add-subdirs-to-load-path
- (expand-file-name "site-lisp/" user-emacs-directory))
+(defun sanityinc/add-subdirs-to-load-path (parent-dir)
+  "Add every non-hidden subdir of PARENT-DIR to `load-path'."
+  (let ((default-directory parent-dir))
+    (setq load-path
+          (append
+           (cl-remove-if-not
+            #'file-directory-p
+            (directory-files (expand-file-name parent-dir) t "^[^\\.]"))
+           load-path))))
+
+;; Add both site-lisp and its immediate subdirs to `load-path'
+(let ((site-lisp-dir (expand-file-name "site-lisp/" user-emacs-directory)))
+  (push site-lisp-dir load-path)
+  (sanityinc/add-subdirs-to-load-path site-lisp-dir))
 
 ;;; Utilities for grabbing upstream libs
 
@@ -44,13 +50,5 @@ source file under ~/.emacs.d/site-lisp/name/"
     (and f (string-prefix-p (file-name-as-directory (site-lisp-dir-for name)) f))))
 
 
-
-;; Download these upstream libs
-
-(unless (> emacs-major-version 23)
-  (ensure-lib-from-url
-   'package
-   "http://repo.or.cz/w/emacs.git/blob_plain/ba08b24186711eaeb3748f3d1f23e2c2d9ed0d09:/lisp/emacs-lisp/package.el"))
-
-
 (provide 'init-site-lisp)
+;;; init-site-lisp.el ends here
